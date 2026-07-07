@@ -1,0 +1,14 @@
+name: Lint PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint-pr-title:
+    permissions:
+      pull-requests: read
+    uses: wealthsimple-community/.github/.github/workflows/lint-pr-title.yml@main
