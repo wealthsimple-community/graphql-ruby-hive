@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: bundler
+    directories:
+      - /
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 6
+      semver-major-days: 6
+      semver-minor-days: 6
+      semver-patch-days: 6
+    pull-request-branch-name:
+      separator: '-'
+    open-pull-requests-limit: 10
+    rebase-strategy: disabled
+    groups:
+      development-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'patch'
+          - 'minor'
+      production-dependencies:
+        dependency-type: 'production'
+        update-types:
+          - 'patch'
+          - 'minor'
