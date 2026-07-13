@@ -1,0 +1,23 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '30 4 * * 1' # weekly, Monday 04:30 UTC
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    uses: wealthsimple-community/.github/.github/workflows/codeql.yml@main
+    with:
+      languages: '["ruby"]'
