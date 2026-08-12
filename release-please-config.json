@@ -1,0 +1,12 @@
+{
+  "bootstrap-sha": "d0fcb04b04e867ec57a2d5328a7b3b141e014ce5",
+  "packages": {
+    ".": {
+      "release-type": "ruby",
+      "package-name": "graphql-hive",
+      "version-file": "lib/graphql-hive/version.rb",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
+    }
+  }
+}
