@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
     "bug_tracker_uri" => "https://github.com/wealthsimple-community/graphql-ruby-hive/issues"
   }
 
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.7.0")
 
   spec.require_paths = ["lib"]
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
