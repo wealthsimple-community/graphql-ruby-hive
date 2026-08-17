@@ -15,7 +15,7 @@ group :development do
   gem "rack-test", "~> 2"
   gem "rake", "~> 13"
   gem "rspec", "~> 3"
-  gem "sinatra", "~> 2"
+  gem "sinatra", "~> 4"
   gem "standardrb", "~> 1"
   gem "vcr", "~> 6"
   gem "webmock", "~> 3"
