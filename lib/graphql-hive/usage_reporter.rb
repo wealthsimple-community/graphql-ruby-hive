@@ -105,7 +105,7 @@ module GraphQL
         fields = Set.new
 
         queries.each do |query|
-          analyzer = GraphQL::Hive::Analyzer.new(query)
+          analyzer = GraphQL::Hive::Analyzer.new(query, process_variables: @options[:process_variables])
           visitor = GraphQL::Analysis::AST::Visitor.new(
             query: query,
             analyzers: [analyzer],

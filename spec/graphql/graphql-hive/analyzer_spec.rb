@@ -4,8 +4,8 @@ require "spec_helper"
 
 RSpec.describe "GraphQL::Hive::Analyzer" do
   subject(:used_fields) do
-    query = GraphQL::Query.new(schema, query_string)
-    analyzer = GraphQL::Hive::Analyzer.new(query)
+    query = GraphQL::Query.new(schema, query_string, variables: variables)
+    analyzer = GraphQL::Hive::Analyzer.new(query, process_variables: process_variables)
     visitor = GraphQL::Analysis::AST::Visitor.new(
       query: query,
       analyzers: [analyzer],
@@ -15,6 +15,9 @@ RSpec.describe "GraphQL::Hive::Analyzer" do
     visitor.visit
     analyzer.used_fields.to_a
   end
+
+  let(:variables) { {} }
+  let(:process_variables) { false }
 
   let(:schema) do
     GraphQL::Schema.from_definition(
@@ -385,6 +388,191 @@ RSpec.describe "GraphQL::Hive::Analyzer" do
         "ProjectSelector",
         "ProjectSelector.organization",
         "String"
+      )
+    end
+  end
+
+  context "with process_variables enabled" do
+    let(:process_variables) { true }
+
+    context "when the variable is an input object with only some fields provided" do
+      let(:query_string) do
+        %|
+          query getProjects($filter: FilterInput) {
+            projects(filter: $filter) {
+              id
+            }
+          }
+        |
+      end
+      let(:variables) { {"filter" => {"type" => "FEDERATION", "pagination" => {"limit" => 10}}} }
+
+      it "marks only the provided input fields, with `!` suffix for non-null values" do
+        expect(used_fields).to include(
+          "FilterInput.type",
+          "FilterInput.type!",
+          "FilterInput.pagination",
+          "FilterInput.pagination!",
+          "PaginationInput.limit",
+          "PaginationInput.limit!",
+          "ProjectType.FEDERATION"
+        )
+        expect(used_fields).not_to include(
+          "FilterInput.order",
+          "FilterInput.order!",
+          "PaginationInput.offset",
+          "PaginationInput.offset!"
+        )
+      end
+    end
+
+    context "when the variable is a list of input objects" do
+      let(:query_string) do
+        %|
+          query getProjects($filter: FilterInput) {
+            projects(filter: $filter) {
+              id
+            }
+          }
+        |
+      end
+      let(:variables) { {"filter" => {"order" => [{"field" => "id", "direction" => "ASC"}, {"field" => "name"}]}} }
+
+      it "walks each list item and unions the provided fields" do
+        expect(used_fields).to include(
+          "FilterInput.order",
+          "FilterInput.order!",
+          "ProjectOrderByInput.field",
+          "ProjectOrderByInput.field!",
+          "ProjectOrderByInput.direction",
+          "ProjectOrderByInput.direction!",
+          "OrderDirection.ASC"
+        )
+        expect(used_fields).not_to include(
+          "OrderDirection.DESC"
+        )
+      end
+    end
+
+    context "when the variable is an enum" do
+      let(:query_string) do
+        %|
+          query getProjects($type: ProjectType!) {
+            projectsByType(type: $type) {
+              id
+            }
+          }
+        |
+      end
+      let(:variables) { {"type" => "STITCHING"} }
+
+      it "marks only the provided enum value" do
+        expect(used_fields).to include(
+          "ProjectType.STITCHING"
+        )
+        expect(used_fields).not_to include(
+          "ProjectType.FEDERATION",
+          "ProjectType.SINGLE",
+          "ProjectType.CUSTOM"
+        )
+      end
+    end
+
+    context "when the variable is a list of enums" do
+      let(:query_string) do
+        %|
+          query getProjects($types: [ProjectType!]!) {
+            projectsByManyTypes(type: $types)
+          }
+        |
+      end
+      let(:variables) { {"types" => ["FEDERATION", "STITCHING"]} }
+
+      it "marks only the provided enum values" do
+        expect(used_fields).to include(
+          "ProjectType.FEDERATION",
+          "ProjectType.STITCHING"
+        )
+        expect(used_fields).not_to include(
+          "ProjectType.SINGLE",
+          "ProjectType.CUSTOM"
+        )
+      end
+    end
+
+    context "when the variable is omitted or null" do
+      let(:query_string) do
+        %|
+          query getProjects($filter: FilterInput) {
+            projects(filter: $filter) {
+              id
+            }
+          }
+        |
+      end
+      let(:variables) { {} }
+
+      it "marks nothing beyond the argument coordinate itself" do
+        expect(used_fields).to include(
+          "Query.projects.filter",
+          "FilterInput"
+        )
+        expect(used_fields).not_to include(
+          "FilterInput.type",
+          "FilterInput.pagination",
+          "FilterInput.order"
+        )
+      end
+    end
+
+    context "when a nullable input field is explicitly null" do
+      let(:query_string) do
+        %|
+          query getProjects($filter: FilterInput) {
+            projects(filter: $filter) {
+              id
+            }
+          }
+        |
+      end
+      let(:variables) { {"filter" => {"type" => nil, "pagination" => {"limit" => 5}}} }
+
+      it "marks the field as touched but without the `!` suffix" do
+        expect(used_fields).to include(
+          "FilterInput.type",
+          "FilterInput.pagination",
+          "FilterInput.pagination!",
+          "PaginationInput.limit",
+          "PaginationInput.limit!"
+        )
+        expect(used_fields).not_to include(
+          "FilterInput.type!"
+        )
+      end
+    end
+  end
+
+  context "with process_variables disabled (default)" do
+    let(:query_string) do
+      %|
+        query getProjects($filter: FilterInput) {
+          projects(filter: $filter) {
+            id
+          }
+        }
+      |
+    end
+    let(:variables) { {"filter" => {"type" => "FEDERATION"}} }
+
+    it "marks every possible input field regardless of what the variable actually contains" do
+      expect(used_fields).to include(
+        "FilterInput.type",
+        "FilterInput.pagination",
+        "FilterInput.order"
+      )
+      expect(used_fields).not_to include(
+        "FilterInput.type!",
+        "FilterInput.pagination!"
       )
     end
   end

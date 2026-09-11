@@ -42,7 +42,8 @@ module GraphQL
       collect_usage_sampling: 1.0,
       target: nil,
       log_request_details: false,
-      warn_on_hive_errors: false
+      warn_on_hive_errors: false,
+      process_variables: false
     }.freeze
 
     self.platform_keys = {
