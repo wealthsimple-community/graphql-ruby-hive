@@ -181,7 +181,7 @@ class MySchema < GraphQL::Schema
       collect_usage: true,
       # Inspect actual variable payloads to report only the input fields and enum values
       # a client actually provided, rather than every field that could theoretically be
-      # used. See "processVariables" below for details and trade-offs.
+      # used. See the `process_variables` section below for details and trade-offs.
       process_variables: false,
       # Usage sampling configurations.
       collect_usage_sampling: {
@@ -232,19 +232,6 @@ See default options for the optional parameters [here](https://github.com/wealth
 
 ## `process_variables`
 
-By default, when a query passes an input object or enum through a `$variable`, this client conservatively reports **every** field of that input type (or every value of that enum) as used. That mirrors the JavaScript client's default and errs on the side of not marking usage evidence a schema owner could remove and break.
+By default, when an input object or enum is passed through a `$variable`, every field of that input type (or every value of that enum) is reported as used — the conservative assumption. Setting `process_variables: true` reports only the coordinates a client actually populated, using both the plain form (`InputType.field`) and a `!`-suffixed form (`InputType.field!`). Hive uses the `!` form to power granular, per-input-field [conditional breaking-change](https://the-guild.dev/graphql/hive/docs/management/targets#conditional-breaking-changes) decisions.
 
-Setting `process_variables: true` enables the client to walk the runtime `provided_variables` payload and report only the schema coordinates the client **actually populated**. For each provided input field, the client reports both the plain coordinate (`InputType.field`) and a `!`-suffixed variant (`InputType.field!`) to match the [JavaScript client's convention](https://the-guild.dev/graphql/hive/docs/api-reference/client#processvariables). Hive uses the `!` form to power granular, per-input-field usage-based [conditional breaking-change](https://the-guild.dev/graphql/hive/docs/management/targets#conditional-breaking-changes) decisions.
-
-**Example.** With input type `input FilterInput { a: String, b: String, c: String }` and a client that only ever provides `{ a: "…" }`:
-
-| Option | Reported coordinates for that input |
-| --- | --- |
-| `process_variables: false` (default) | `FilterInput.a`, `FilterInput.b`, `FilterInput.c` — Hive assumes any field could be used |
-| `process_variables: true` | `FilterInput.a`, `FilterInput.a!` — only the field actually provided |
-
-With the second configuration, Hive can safely mark removal of `FilterInput.b` or `FilterInput.c` as non-breaking, while still blocking removal of `FilterInput.a`.
-
-**No variable values are ever sent to Hive** — only the schema coordinates derived from the payload structure. This matches the JavaScript client's guarantee.
-
-**Trade-off.** With the flag on, the client walks the variables payload per operation instead of relying on the static type reference. The cost is negligible for typical payloads and runs in the background reporter thread, so it does not add latency to your GraphQL responses.
+Only schema coordinates derived from the payload structure are sent — never the variable values themselves.
