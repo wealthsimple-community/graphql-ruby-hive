@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.5](https://github.com/wealthsimple-community/graphql-ruby-hive/compare/v0.6.4...v0.6.5) (2026-09-15)
+
+
+### Features
+
+* support processVariables ([#14](https://github.com/wealthsimple-community/graphql-ruby-hive/issues/14)) ([94cc38f](https://github.com/wealthsimple-community/graphql-ruby-hive/commit/94cc38f9e379c5aa7dd85e40d46f8add17a9fb57))
+
 ## [0.6.4](https://github.com/wealthsimple-community/graphql-ruby-hive/compare/v0.6.3...v0.6.4) (2026-08-17)
 
 
