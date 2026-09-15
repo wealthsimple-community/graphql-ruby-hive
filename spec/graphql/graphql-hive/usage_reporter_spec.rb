@@ -223,5 +223,38 @@ RSpec.describe GraphQL::Hive::UsageReporter do
         :usage
       )
     end
+
+    context "when two operations in the same batch share a document but produce different coord sets" do
+      let(:schema) do
+        GraphQL::Schema.from_definition(<<~GQL)
+          type Query { search(filter: FilterInput): String }
+          input FilterInput { a: String, b: String }
+        GQL
+      end
+      let(:query_string) { "query Search($f: FilterInput) { search(filter: $f) }" }
+      let(:query_a) { GraphQL::Query.new(schema, query_string, variables: {"f" => {"a" => "hi"}}) }
+      let(:query_b) { GraphQL::Query.new(schema, query_string, variables: {"f" => {"b" => "bye"}}) }
+      let(:result_a) { GraphQL::Query::Result.new(query: query_a, values: {"data" => {"search" => "ok"}}) }
+      let(:result_b) { GraphQL::Query::Result.new(query: query_b, values: {"data" => {"search" => "ok"}}) }
+      let(:options) { {logger: logger, buffer_size: 2, queue_size: 1000, process_variables: true} }
+
+      it "unions the coord sets in the batched report instead of overwriting" do
+        op_a = [timestamp, [query_a], [result_a], duration]
+        op_b = [timestamp, [query_b], [result_b], duration]
+
+        sent_report = nil
+        allow(client).to receive(:send) { |_endpoint, report, _tag| sent_report = report }
+
+        usage_reporter_instance.send(:process_operations, [op_a, op_b])
+
+        expect(sent_report[:map].size).to eq(1)
+        map_entry = sent_report[:map].values.first
+        expect(map_entry[:fields]).to include(
+          "FilterInput.a", "FilterInput.a!",
+          "FilterInput.b", "FilterInput.b!"
+        )
+        expect(sent_report[:operations].size).to eq(2)
+      end
+    end
   end
 end

@@ -105,7 +105,7 @@ module GraphQL
         fields = Set.new
 
         queries.each do |query|
-          analyzer = GraphQL::Hive::Analyzer.new(query)
+          analyzer = GraphQL::Hive::Analyzer.new(query, process_variables: @options[:process_variables])
           visitor = GraphQL::Analysis::AST::Visitor.new(
             query: query,
             analyzers: [analyzer],
@@ -139,8 +139,16 @@ module GraphQL
           operation_record[:metadata] = {client: @options[:client_info].call(context)} if @options[:client_info]
         end
 
+        # Union with any existing fields for this key. Operations that share a document
+        # but differ in variables produce the same operation_map_key (MD5 of the printed
+        # operation body, which does not include variable values) but can produce
+        # different coord sets under process_variables. Overwriting would drop the
+        # earlier op's coord evidence for this batch.
+        existing_fields = report[:map][operation_map_key]&.fetch(:fields, nil)
+        merged_fields = existing_fields ? (Set.new(existing_fields) | fields) : fields
+
         report[:map][operation_map_key] = {
-          fields: fields.to_a,
+          fields: merged_fields.to_a,
           operationName: operation_name,
           operation: operation
         }

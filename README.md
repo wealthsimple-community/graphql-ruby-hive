@@ -179,6 +179,10 @@ class MySchema < GraphQL::Schema
       queue_size: 1000,
       # Report usage to Hive.
       collect_usage: true,
+      # Inspect actual variable payloads to report only the input fields and enum values
+      # a client actually provided, rather than every field that could theoretically be
+      # used. See the `process_variables` section below for details and trade-offs.
+      process_variables: false,
       # Usage sampling configurations.
       collect_usage_sampling: {
         # % of operations recorded.
@@ -225,3 +229,9 @@ See default options for the optional parameters [here](https://github.com/wealth
 > `queue_size` is the size of the queue used to send operations to the buffer before sampling.
 > Adjust these values according to your application's memory constraints and throughput.
 > High throughput applications will need a larger `queue_size`.
+
+## `process_variables`
+
+By default, when an input object or enum is passed through a `$variable`, every field of that input type (or every value of that enum) is reported as used — the conservative assumption. Setting `process_variables: true` reports only the coordinates a client actually populated, using both the plain form (`InputType.field`) and a `!`-suffixed form (`InputType.field!`). Hive uses the `!` form to power granular, per-input-field [conditional breaking-change](https://the-guild.dev/graphql/hive/docs/management/targets#conditional-breaking-changes) decisions.
+
+Only schema coordinates derived from the payload structure are sent — never the variable values themselves.
