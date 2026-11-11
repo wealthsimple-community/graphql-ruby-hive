@@ -55,7 +55,7 @@ GEM
       stringio
     public_suffix (5.1.1)
     racc (1.8.1)
-    rack (2.2.24)
+    rack (2.2.25)
     rack-protection (2.2.4)
       rack
     rack-test (2.2.0)
